@@ -28,6 +28,7 @@ ALTER SCHEMA lojas OWNER TO Erico;
 
 -- Definir o caminho de pesquisa do usuário Erico
 ALTER USER Erico SET SEARCH_PATH TO lojas, "$user", public;
+
 ----------------------
 --criação de tabelas--
 ----------------------
