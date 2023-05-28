@@ -103,7 +103,7 @@ CREATE TABLE lojas.estoques (
     CONSTRAINT pk_estoques PRIMARY KEY (estoque_id)
 );
 
-ALTER TABLE estoques
+ALTER TABLE lojas.estoques
 ADD CONSTRAINT estoques_check
 CHECK (quantidade >= 0);
 
