@@ -103,6 +103,10 @@ CREATE TABLE lojas.estoques (
     CONSTRAINT pk_estoques PRIMARY KEY (estoque_id)
 );
 
+ALTER TABLE estoques
+ADD CONSTRAINT estoques_check
+CHECK (quantidade >= 0);
+
 --criar comentarios da tabela estoques
 COMMENT ON COLUMN lojas.estoques.estoque_id    IS 'numero do id do estoque';
 COMMENT ON COLUMN lojas.estoques.loja_id       IS 'numero do id do estoque da loja';
