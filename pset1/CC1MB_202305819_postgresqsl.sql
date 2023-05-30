@@ -2,32 +2,35 @@
 DROP DATABASE IF EXISTS uvv;
 
 -- Apagar usuário com o mesmo nome
-DROP USER IF EXISTS Erico;
+DROP USER IF EXISTS erico;
 
 -- Criar usuário
-CREATE USER Erico WITH
+CREATE USER erico WITH
 CREATEDB
 CREATEROLE
 ENCRYPTED PASSWORD '123';
 
 -- Criar o banco de dados
 CREATE DATABASE uvv
-OWNER Erico
+OWNER erico
 TEMPLATE template0
 ENCODING 'UTF8'
 LC_COLLATE 'pt_BR.UTF-8'
 LC_CTYPE 'pt_BR.UTF-8'
 ALLOW_CONNECTIONS true;
 
+COMMENT ON DATABASE uvv IS 'Banco de dados lojas uvv';
+
 -- Conectar ao banco de dados
 \c uvv
 
 -- Criar schema lojas
-CREATE SCHEMA lojas AUTHORIZATION Erico;
-ALTER SCHEMA lojas OWNER TO Erico;
+CREATE SCHEMA lojas AUTHORIZATION erico;
+ALTER SCHEMA lojas OWNER TO erico;
 
--- Definir o caminho de pesquisa do usuário Erico
-ALTER USER Erico SET SEARCH_PATH TO lojas, "$user", lojas;
+-- Definir o caminho de pesquisa do usuário erico
+ALTER USER erico SET SEARCH_PATH TO lojas, "$user", lojas;
+
 ----------------------
 --criação de tabelas--
 ----------------------
@@ -47,7 +50,7 @@ CREATE TABLE lojas.produtos (
 );
 
 ALTER TABLE lojas.produtos
-ADD CONSTRAINT produtos_preco_positivo
+ADD CONSTRAINT produtos_check
 CHECK (preco_unitario >= 0); 
 
 --criar comentarios da tabela produtos
@@ -60,6 +63,7 @@ COMMENT ON COLUMN lojas.produtos.imagem_mime_type             IS 'imagem mime ty
 COMMENT ON COLUMN lojas.produtos.imagem_arquivo               IS 'arquivo da imagem do produto';
 COMMENT ON COLUMN lojas.produtos.imagem_charset               IS 'imagem charset do produto';
 COMMENT ON COLUMN lojas.produtos.imagem_ultima_atualizacao    IS 'data da ultima atualização da imagem do produto';
+COMMENT ON CONSTRAINT produtos_check ON lojas.produtos        IS 'Confere se o valor do preço unitario é maior ou igual a 0';
 
 --criar a tabela lojas
 CREATE TABLE lojas.lojas (
@@ -78,21 +82,22 @@ CREATE TABLE lojas.lojas (
 );
 
 ALTER TABLE lojas.lojas
-ADD CONSTRAINT endereco_check
+ADD CONSTRAINT lojas_check
 CHECK (endereco_web IS NOT NULL OR endereco_fisico IS NOT NULL);
 
 --criar comentarios da tabela lojas
-COMMENT ON COLUMN lojas.lojas.loja_id                    IS 'numero do id da loja';
-COMMENT ON COLUMN lojas.lojas.nome                       IS 'nome da loja';
-COMMENT ON COLUMN lojas.lojas.endereco_web               IS 'endereco web da loja';
-COMMENT ON COLUMN lojas.lojas.endereco_fisico            IS 'endereco fisico da loja';
-COMMENT ON COLUMN lojas.lojas.latitude                   IS 'latitude da loja';
-COMMENT ON COLUMN lojas.lojas.longitude                  IS 'longitude da loja';
-COMMENT ON COLUMN lojas.lojas.logo                       IS 'logo da loja';
-COMMENT ON COLUMN lojas.lojas.logo_mime_type             IS 'logo mime type da loja';
-COMMENT ON COLUMN lojas.lojas.logo_arquivo               IS 'arquivo da logo da loja';
-COMMENT ON COLUMN lojas.lojas.logo_charset               IS 'logo charset da loja';
-COMMENT ON COLUMN lojas.lojas.logo_ultima_atualizacao    IS 'data da ultima atualização da logo da loja';
+COMMENT ON COLUMN lojas.lojas.loja_id                     IS 'numero do id da loja';
+COMMENT ON COLUMN lojas.lojas.nome                        IS 'nome da loja';
+COMMENT ON COLUMN lojas.lojas.endereco_web                IS 'endereco web da loja';
+COMMENT ON COLUMN lojas.lojas.endereco_fisico             IS 'endereco fisico da loja';
+COMMENT ON COLUMN lojas.lojas.latitude                    IS 'latitude da loja';
+COMMENT ON COLUMN lojas.lojas.longitude                   IS 'longitude da loja';
+COMMENT ON COLUMN lojas.lojas.logo                        IS 'logo da loja';
+COMMENT ON COLUMN lojas.lojas.logo_mime_type              IS 'logo mime type da loja';
+COMMENT ON COLUMN lojas.lojas.logo_arquivo                IS 'arquivo da logo da loja';
+COMMENT ON COLUMN lojas.lojas.logo_charset                IS 'logo charset da loja';
+COMMENT ON COLUMN lojas.lojas.logo_ultima_atualizacao     IS 'data da ultima atualização da logo da loja';
+COMMENT ON CONSTRAINT lojas_check ON lojas.lojas          IS 'Confere se o endereço fisico ou web nao são nulos, garantindo a marcação de pelo menos 1';
 
 --criar a tabela estoques
 CREATE TABLE lojas.estoques (
@@ -102,10 +107,6 @@ CREATE TABLE lojas.estoques (
     quantidade         NUMERIC(38)   NOT NULL ,
     CONSTRAINT pk_estoques PRIMARY KEY (estoque_id)
 );
-
-ALTER TABLE lojas.estoques
-ADD CONSTRAINT estoques_check
-CHECK (quantidade >= 0);
 
 --criar comentarios da tabela estoques
 COMMENT ON COLUMN lojas.estoques.estoque_id    IS 'numero do id do estoque';
@@ -148,11 +149,12 @@ ADD CONSTRAINT envios_check
 CHECK (status IN ('CRIADO', 'ENVIADO', 'TRANSITO', 'ENTREGUE'));
 
 --criar comentarios da tabela envios
-COMMENT ON COLUMN lojas.envios.envio_id            IS 'numero do id do envio';
-COMMENT ON COLUMN lojas.envios.cliente_id          IS 'id do envio';
-COMMENT ON COLUMN lojas.envios.loja_id             IS 'id da loja de envio';
-COMMENT ON COLUMN lojas.envios.endereco_entrega    IS 'endereço de entrega do envio';
-COMMENT ON COLUMN lojas.envios.status              IS 'status do envio';
+COMMENT ON COLUMN lojas.envios.envio_id                IS 'numero do id do envio';
+COMMENT ON COLUMN lojas.envios.cliente_id              IS 'id do envio';
+COMMENT ON COLUMN lojas.envios.loja_id                 IS 'id da loja de envio';
+COMMENT ON COLUMN lojas.envios.endereco_entrega        IS 'endereço de entrega do envio';
+COMMENT ON COLUMN lojas.envios.status                  IS 'status do envio';
+COMMENT ON CONSTRAINT envios_check ON lojas.envios     IS 'Confere se o status tem a seguinte descrição: CRIADO, ENVIADO, TRANSITO, ENTREGUE';
 
 --criar a tabela pedidos
 CREATE TABLE lojas.pedidos (
@@ -164,16 +166,17 @@ CREATE TABLE lojas.pedidos (
     CONSTRAINT pk_pedidos PRIMARY KEY (pedido_id)
 );
 
---criar comentarios da tabela pedidos
-COMMENT ON COLUMN lojas.pedidos.pedido_id          IS 'numero do id do pedido';
-COMMENT ON COLUMN lojas.pedidos.data_hora          IS 'data e hora do pedido';
-COMMENT ON COLUMN lojas.pedidos.status             IS 'status do pedido';
-COMMENT ON COLUMN lojas.pedidos.cliente_pedidos    IS 'numero do cliente do pedido';
-COMMENT ON COLUMN lojas.pedidos.loja_pedidos       IS 'numero da loja do pedido';
-
 ALTER TABLE lojas.pedidos
-ADD CONSTRAINT pedidos_status
+ADD CONSTRAINT pedidos_check
 CHECK (status IN ('CANCELADO', 'COMPLETO', 'ABERTO', 'PAGO', 'REEMBOLSADO', 'ENVIADO'));
+
+--criar comentarios da tabela pedidos
+COMMENT ON COLUMN lojas.pedidos.pedido_id              IS 'numero do id do pedido';
+COMMENT ON COLUMN lojas.pedidos.data_hora              IS 'data e hora do pedido';
+COMMENT ON COLUMN lojas.pedidos.status                 IS 'status do pedido';
+COMMENT ON COLUMN lojas.pedidos.cliente_pedidos        IS 'numero do cliente do pedido';
+COMMENT ON COLUMN lojas.pedidos.loja_pedidos           IS 'numero da loja do pedido';
+COMMENT ON CONSTRAINT pedidos_check ON lojas.pedidos     IS 'Confere se o status tem a seguinte descrição: CANCELADO, COMPLETO, ABERTO, PAGO, REEMBOLSADO, ENVIADO';
 
 --criar a tabela pedidos_itens
 CREATE TABLE lojas.pedidos_itens (
@@ -191,20 +194,23 @@ ADD CONSTRAINT pedidos_itens_check
 CHECK (preco_unitario >= 0); 
 
 ALTER TABLE lojas.pedidos_itens
-ADD CONSTRAINT pedidos_itens_check2
+ADD CONSTRAINT pedidos_itens_checktwo
 CHECK (quantidade >= 0); 
 
 ALTER TABLE lojas.pedidos_itens
-ADD CONSTRAINT pedidos_itens_check3
+ADD CONSTRAINT pedidos_itens_checkthree
 CHECK (numero_da_linha >= 0);
 
 --criar comentarios da tabela pedidos_itens
-COMMENT ON COLUMN lojas.pedidos_itens.pedido_item_id     IS 'numero do id dos itens do pedido';
-COMMENT ON COLUMN lojas.pedidos_itens.produto_id         IS 'numero do id dos produtos dos itens do pedido';
-COMMENT ON COLUMN lojas.pedidos_itens.numero_da_linha    IS 'numero da linha dos itens do pedido';
-COMMENT ON COLUMN lojas.pedidos_itens.preco_unitario     IS 'preço unitario dos itens do pedido';
-COMMENT ON COLUMN lojas.pedidos_itens.quantidade         IS 'quantidade dos itens do pedido';
-COMMENT ON COLUMN lojas.pedidos_itens.envio_id           IS 'numero do id dos itens do envio';
+COMMENT ON COLUMN lojas.pedidos_itens.pedido_item_id                      IS 'numero do id dos itens do pedido';
+COMMENT ON COLUMN lojas.pedidos_itens.produto_id                          IS 'numero do id dos produtos dos itens do pedido';
+COMMENT ON COLUMN lojas.pedidos_itens.numero_da_linha                     IS 'numero da linha dos itens do pedido';
+COMMENT ON COLUMN lojas.pedidos_itens.preco_unitario                      IS 'preço unitario dos itens do pedido';
+COMMENT ON COLUMN lojas.pedidos_itens.quantidade                          IS 'quantidade dos itens do pedido';
+COMMENT ON COLUMN lojas.pedidos_itens.envio_id                            IS 'numero do id dos itens do envio';
+COMMENT ON CONSTRAINT pedidos_itens_check ON lojas.pedidos_itens          IS 'Confere se o valor do preço unitario é maior ou igual a 0';
+COMMENT ON CONSTRAINT pedidos_itens_checktwo ON lojas.pedidos_itens       IS 'Confere se o valor da quantidade é maior ou igual a 0';
+COMMENT ON CONSTRAINT pedidos_itens_checkthree ON lojas.pedidos_itens     IS 'Confere se o valor do numero da linha é maior ou igual a 0';
 
 ----------------------
 --criação das chaves--
